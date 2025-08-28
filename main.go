@@ -49,8 +49,14 @@ func getInfoFromDb(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	connStr := "user=# password=# dbname=# sslmode=disable port=5433"
-	var err error
+	config, err := loadConfig()
+
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	connStr := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable port=%s", config.DB.User, config.DB.Password, config.DB.Dbname, config.DB.Port)
 	db, err = sql.Open("postgres", connStr)
 
 	if err != nil {
