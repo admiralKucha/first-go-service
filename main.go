@@ -111,10 +111,9 @@ func getAllCars(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAllYearsCount(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	data := make([]Counts, 0)
+	//data := make([]Counts, 0)
 
-	rows, err := db.Query("SELECT date_of_publication_year, count(*) FROM unique_summary_cars GROUP BY date_of_publication_year;")
+	rows, err := db.Query("SELECT * FROM years_count;")
 
 	// Если ошибка 
 	if err != nil{
@@ -138,12 +137,10 @@ func getAllYearsCount(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-        data = append(data, p)
+        //data = append(data, p)
     }
-
-	w.WriteHeader(http.StatusOK)
-    response := Response{Message: "Получена информация о количестве машин годов", Status: "success", Data: data}
-    json.NewEncoder(w).Encode(response)
+	
+	http.ServeFile(w, r, "static/yearsCount.html")
 }
 
 func main() {
