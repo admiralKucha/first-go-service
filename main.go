@@ -21,16 +21,14 @@ type CarSmallInfo struct {
     Name string `json:"message"`
 }
 
+type Counts struct {
+	Name string `json:"string"`
+    Count int `json:"int"`
+}
+
 
 var db *sql.DB
 
-
-func getInfoAbout(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
-    response := Response{Message: "Hello, World!", Status: "success"}
-    json.NewEncoder(w).Encode(response)
-}
 
 func getInfoFromDb(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -73,7 +71,12 @@ func getAllCars(w http.ResponseWriter, r *http.Request) {
 		}
     }
 
-	rows, err := db.Query("SELECT id, name from cars_csv limit 10 offset $1;", offset)
+	rows, err := db.Query(
+		"SELECT id, name FROM unique_summary_cars " +
+		"LIMIT 10 " +
+		"OFFSET $1;",
+		offset,
+	)
 
 	// Если ошибка 
 	if err != nil{
@@ -107,6 +110,42 @@ func getAllCars(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func getAllYearsCount(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	data := make([]Counts, 0)
+
+	rows, err := db.Query("SELECT date_of_publication_year, count(*) FROM unique_summary_cars GROUP BY date_of_publication_year;")
+
+	// Если ошибка 
+	if err != nil{
+		w.WriteHeader(http.StatusInternalServerError)
+		response := Response{Message: "Неизвестная ошибка сервера", Status: "error"}
+		json.NewEncoder(w).Encode(response)
+		fmt.Println(err)
+		return
+    }
+
+	// Обрабатываем полученный результат
+	defer rows.Close()
+    for rows.Next(){
+        p := Counts{}
+        err := rows.Scan(&p.Name, &p.Count)
+
+		if err != nil{
+			w.WriteHeader(http.StatusInternalServerError)
+			response := Response{Message: "Неизвестная ошибка сервера", Status: "error"}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+        data = append(data, p)
+    }
+
+	w.WriteHeader(http.StatusOK)
+    response := Response{Message: "Получена информация о количестве машин годов", Status: "success", Data: data}
+    json.NewEncoder(w).Encode(response)
+}
+
 func main() {
 	config, err := loadConfig()
 
@@ -132,9 +171,9 @@ func main() {
 		return
     }
 
-    http.HandleFunc("/about", getInfoAbout)
 	http.HandleFunc("/info", getInfoFromDb)
-	http.HandleFunc("/all", getAllCars)
+	http.HandleFunc("/", getAllCars)
+	http.HandleFunc("/years", getAllYearsCount)
 
 	fmt.Println("Server is listening...")
     http.ListenAndServe(":8080", nil)
