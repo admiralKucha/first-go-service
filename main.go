@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 
@@ -111,9 +112,8 @@ func getAllCars(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAllYearsCount(w http.ResponseWriter, r *http.Request) {
-	//data := make([]Counts, 0)
-
-	rows, err := db.Query("SELECT * FROM years_count;")
+	rows, err := db.Query("SELECT date_of_publication_year, count FROM years_count ORDER BY date_of_publication_year DESC;")
+	data := []Counts{}
 
 	// Если ошибка 
 	if err != nil{
@@ -137,10 +137,11 @@ func getAllYearsCount(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-        //data = append(data, p)
+        data = append(data, p)
     }
-	
-	http.ServeFile(w, r, "static/yearsCount.html")
+
+	tmpl, _ := template.ParseFiles("static/yearsCount.html")
+    tmpl.Execute(w, data)
 }
 
 func main() {
